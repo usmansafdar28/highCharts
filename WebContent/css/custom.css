@@ -1,0 +1,46 @@
+
+
+/*  pretty css */
+
+table.pretty {
+    width: 100%;
+    clear: both;
+}
+ 
+table.pretty td,
+table.pretty th {
+    padding: 0px;
+    border: 1px solid #fff;
+	text-align: center;
+	font-size: 0.8em;
+	font-family: Menlo, Monaco, Consolas, "Courier New", monospace;
+}
+
+/* Header cells */
+table.pretty thead tr {
+    text-align: center;
+    background: #66a9bd;
+}
+
+table.pretty tbody th {
+    text-align: left;
+    background: #91c5d4;
+}
+a:link {text-decoration:none;}
+a:visited {text-decoration:none;}
+a:hover {text-decoration:underline;}
+
+
+	 
+table.pretty tbody td {
+    text-align: center;
+    background: #d5eaf0;
+	padding: 3px 10px;
+	font-size: 0.8em;
+	font-family: Menlo, Monaco, Consolas, "Courier New", monospace;
+}
+         
+table.pretty tbody tr.odd td {
+    background: #bcd9e1;
+	
+}
