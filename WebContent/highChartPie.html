@@ -1,0 +1,156 @@
+<!DOCTYPE HTML>
+<html>
+	<head>
+		<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+	    <meta name="viewport" content="width=device-width, initial-scale=1">
+		<title>OEE Pie Chart</title>
+		
+		<script src="https://code.highcharts.com/highcharts.js"></script>
+		<script src="https://code.highcharts.com/modules/exporting.js"></script>
+		<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+		<script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/1.8.2/jquery.min.js"></script>		
+		<script src="js/jquery.datetimepicker.js" ></script>	
+		<link   rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+		<link  href="css/jquery.datetimepicker.css" rel="stylesheet" type="text/css">	
+		<link  href="css/custom.css" rel="stylesheet" type="text/css">	
+		<script type="text/javascript">
+
+			function sendRestfulCall(timeobject) {
+				//alert(timeobject.to + "   " + timeobject.from);
+				$.ajax({
+							type : 'GET',
+							url : '/highCharts/charts/dbtojsonprovider/'
+									+ JSON.stringify(timeobject),
+							dataType : 'json',
+							success : function(data) {
+								$(function() {
+									
+									var plotArray=[];
+//									alert(data.problem.length);
+									for (var i = 0; i < data.problem.length; i++) 
+										{			
+										var plotobject={};
+										plotobject.name = data.problem[i];
+										plotobject.y = data.duration[i];
+										plotArray.push(plotobject);
+										}
+//									alert(plotArray);
+
+									Highcharts
+											.chart(
+													'container',
+													{
+														chart : {
+															plotBackgroundColor : null,
+															plotBorderWidth : null,
+															plotShadow : false,
+															type : 'pie'
+														},
+														title : {
+															text : 'Analysis By Department From:'+ timeobject.from + " To " + timeobject.to
+														},
+														tooltip : {
+															pointFormat : '{series.name}: <b>{point.percentage:.1f}%</b>'
+														},
+														plotOptions : {
+															pie : {
+																allowPointSelect : true,
+																cursor : 'pointer',
+																dataLabels : {
+																	enabled : true,
+																	format : '<b>{point.name}</b>: {point.percentage:.1f} %',
+																	style : {
+																		color : (Highcharts.theme && Highcharts.theme.contrastTextColor)
+																				|| 'black'
+																	}
+																}
+															}
+														},
+														series : [ {
+															name : 'Contribution',
+															colorByPoint : true,
+															data : plotArray
+														} ]
+													});
+								1});
+
+							}
+
+						});
+			}
+		</script>
+	</head>
+<body>
+
+<div class="container-fluid">
+<ul class="nav nav-pills nav-stacked nav-justified">
+    <li class="active"><a href="http://localhost:9090/highCharts/highChartPie.html">Pie Chart</a></li>
+    <li><a href="http://localhost:9090/highCharts/highChartBar.html">Bar Chart</a></li>
+  </ul>
+<table id="timeSelection" class="table table-striped table-bordered table-condensed table-responsive">
+			<tr>
+				<Td><b>Select Time From: </b><input id="datepickerFrom" type="text" size="15"> &nbsp;  <b>To:</b>  <input id="datepickerTo" type="text" size="15"> <input value="Go!" type="button" onClick="dateFilter();"> </td>
+			</tr>
+</table>
+<div id="container" ></div>
+</div>
+<script type="text/javascript"> 
+
+	var from = '';
+	var to = '';
+	if (from == '' || to == '') {
+		var d = new Date(new Date());
+		var curr_date = d.getDate();
+		var curr_month = d.getMonth() + 1; //Months are zero based
+		var curr_year = d.getFullYear();
+		var curr_hour = d.getHours();
+		var curr_min = d.getMinutes();
+
+		if (to == '')
+			to = curr_year + "-" + curr_month + "-" + curr_date + " "
+					+ curr_hour + ":" + curr_min;
+
+		d.setDate(1);
+		curr_date = d.getDate();
+
+		if (from == '')
+			from = curr_year + "-" + curr_month + "-" + curr_date + " 00:00";
+	}
+
+	$("#datepickerFrom").datetimepicker({
+		format : 'Y-m-d H:i'
+	});
+	$("#datepickerTo").datetimepicker({
+		format : 'Y-m-d H:i'
+	});
+
+	$('#datepickerFrom').datetimepicker({
+		value : from,
+		step : 30
+	});
+	$('#datepickerTo').datetimepicker({
+		value : to,
+		step : 30
+	});
+
+	document.getElementById('datepickerFrom').value = from;
+	document.getElementById('datepickerTo').value = to;
+	var timeobject = {};
+	timeobject.to = to;
+	timeobject.from = from;
+	timeobject.chartName = "pie";
+	
+	sendRestfulCall(timeobject);
+
+	function dateFilter() {
+		//alert("Datefilter");
+		var timeobject = {};
+		timeobject.from = document.getElementById('datepickerFrom').value;
+		timeobject.to = document.getElementById('datepickerTo').value;
+		timeobject.chartName = "pie";
+		//alert("Datefilter " + timeobject);
+		sendRestfulCall(timeobject);
+	}
+</script>
+	</body>
+</html>

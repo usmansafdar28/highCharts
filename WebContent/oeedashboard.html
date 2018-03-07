@@ -1,0 +1,376 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>OEE Dashboard</title>
+
+<script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/1.8.2/jquery.min.js"></script>
+<script src="js/jquery.datetimepicker.js" ></script>	
+<script src="js/extremes-history.js"></script>  
+<script src="https://code.highcharts.com/highcharts.js"></script>
+<script src="https://code.highcharts.com/modules/exporting.js"></script>
+<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+<link  href="css/jquery.datetimepicker.css" rel="stylesheet" type="text/css">	
+
+<style>
+.navbar-default {
+    background-color: #ADD8E6;
+    border-color: #2C3539;
+}
+.navbar-fixed-left {
+  width: 200px;
+  position: fixed;
+  border-radius: 0;
+  height: 100%;
+  color: #008000
+}
+
+.navbar-fixed-left .navbar-nav > li {
+  float: none;  /* Cancel default li float: left */
+  width: 139px;
+}
+
+.navbar-fixed-left + .container {
+  padding-left: 160px;
+}
+
+/* On using dropdown menu (To right shift popuped) */
+.navbar-fixed-left .navbar-nav > li > .dropdown-menu {
+  margin-top: -50px;
+  margin-left: 140px;
+}
+
+</style>
+
+<script type="text/javascript">
+
+	var mainDataObject = {}; // Initialization of Global Object for Containment of all the data from Backend
+	var nameSlicedPie = []; // Array for containing Sliced part of Pie which is to deleted
+	var statusOfCurrentChart = 1; // Status of Currently Opened Bar Chart
+
+	function sendRestfulCall(timeobject) {
+		//alert(timeobject.from + "   " + timeobject.to);
+		nameSlicedPie = [];
+
+		$.ajax({
+			type : 'GET',
+			url : '/highCharts/charts/dbtojsonprovider/'
+					+ JSON.stringify(timeobject),
+			dataType : 'json',
+			success : function(data) {
+				//	var chart;
+				//	alert(data.problem);
+				mainDataObject = data;
+				highChartPlotFunction(mainDataObject);
+
+			}//
+
+		});
+	}
+
+	function highChartPlotFunction(data) {
+
+		var data = data;
+		plotBarCharts(data);
+		plotPieCharts(data);
+		
+	}
+	
+	function plotPieCharts(data)
+	{
+		
+		var data = data;
+		$(function() {
+			var plotArray = [];			
+			var problemLength = data.problem.length;
+			
+			//	alert(data.problem.length);
+			
+			(function() {
+				var i = 0;
+				var plotObject = {};
+				for (i; i < problemLength; i++) {
+					
+				if (($.inArray(data.problem[i], data.nameSlicedPie) > -1) == false) // Discarding the Deleted Slices from Pie chart in Current session
+				{
+					
+					plotObject.name = data.problem[i];
+					plotObject.y = data.duration[i];
+					plotArray.push(plotObject);
+					
+				}
+				plotObject = {};
+
+			}
+		})();
+			//			alert(plotArray);
+
+			Highcharts
+					.chart(
+							'container',
+							{
+								chart : {
+									plotBackgroundColor : null,
+									plotBorderWidth : null,
+									plotShadow : false,
+									type : 'pie'
+								},
+								title : {
+									text : 'Downtime w.r.t Department From:'
+											+ timeobject.from + " To "
+											+ timeobject.to
+								},
+								tooltip : {
+									pointFormat : '{series.name}: <b>{point.percentage:.1f}%</b>'
+								},
+								plotOptions : {
+									pie : {
+										allowPointSelect : true,
+										cursor : 'pointer',
+										dataLabels : {
+											enabled : true,
+											format : '<b>{point.name}</b>: {point.percentage:.1f} %',
+											style : {
+												color : (Highcharts.theme && Highcharts.theme.contrastTextColor)
+														|| 'black'
+											}
+										}
+									}
+								},
+								series : [ {
+									name : 'Contribution',
+									colorByPoint : true,
+									data : plotArray,
+									point : {
+										events : {
+											click : function(event) {
+												nameSlicedPie.push(this.name);
+												mainDataObject.nameSlicedPie = nameSlicedPie;
+												// alert(this.name);
+												plotPieCharts(mainDataObject);
+											}
+										}
+									}
+								} ]
+							});
+
+		});		
+		
+		
+	}
+	
+	
+	function plotBarCharts(data)
+	{
+		var data = data;
+		$(function() {
+
+			var durationCate = "";
+			var columnName = data.id;
+			if (columnName == '' || columnName == null) {
+				columnName = "problem1"
+				durationCate = "duration1";
+			}
+
+			else if (columnName == "problem1") {
+				durationCate = "duration1";
+			} else if (columnName == "reason1") {
+				durationCate = "durationReason1";
+			} else if (columnName == "problem2") {
+				durationCate = "durationProbelm2";
+			}
+			var cateArray = data[columnName];
+			var seriesData = [];
+			
+// 			for (var j=0; j< 10; j++)
+// 				{
+// 			 		seriesData[j] = data[durationCate][j];
+// 				}
+			
+			seriesData = data[durationCate];
+			
+			Highcharts
+					.chart(
+							'containerpie',
+							{
+								chart : {
+									type : 'bar'
+								},
+								title : {
+									text : 'Downtime Analysis by ' + columnName
+								},
+								subtitle : {
+									text : 'Source: <a href="https://localhost:9090/bluescope/maxoee/downtime.jsp">Downtime</a>'
+								},
+								xAxis : {
+									categories : cateArray,
+									title : {
+										text : null
+									}
+								},
+								yAxis : {
+									min : 0,
+									title : {
+										text : 'Downtime Duration (Hours)',
+										align : 'high'
+									},
+									labels : {
+										overflow : 'justify'
+									}
+								},
+								tooltip : {
+									valueSuffix : ' Hours'
+								},
+								plotOptions : {
+									bar : {
+										dataLabels : {
+											enabled : true
+										}
+									}
+								},
+								legend : {
+									layout : 'vertical',
+									align : 'right',
+									verticalAlign : 'top',
+									x : -40,
+									y : 80,
+									floating : true,
+									borderWidth : 1,
+									backgroundColor : ((Highcharts.theme && Highcharts.theme.legendBackgroundColor) || '#FFFFFF'),
+									shadow : true
+								},
+								credits : {
+									enabled : false
+								},
+								series : [ {
+									name : 'Downtime',
+									data : seriesData
+								} ]
+							});
+
+		});
+		
+	}
+
+	function columnWiseFilter(button_clicked) {
+		//	alert("Button Clieck: " + button_clicked)
+
+		if (statusOfCurrentChart == button_clicked) // If Already Opened Bar Chart is Clicked, Ignore it
+		{
+		} else {
+			if (button_clicked == 1) {
+				mainDataObject.id = "problem1"
+				statusOfCurrentChart = 1;
+				plotBarCharts(mainDataObject);
+
+			} else if (button_clicked == 2) {
+				mainDataObject.id = "problem2";
+				statusOfCurrentChart = 2;
+				plotBarCharts(mainDataObject);
+
+			} else if (button_clicked == 3) {
+				mainDataObject.id = "reason1";
+				statusOfCurrentChart = 3;
+				plotBarCharts(mainDataObject);
+
+			}
+		}
+	}
+	
+	function dateFilter() {
+
+		var timeobject = {};
+		timeobject.from = document.getElementById('datepickerFrom').value;
+		timeobject.to = document.getElementById('datepickerTo').value;
+
+		sendRestfulCall(timeobject); // Calling plot function with custom entered time by User for All Charts
+
+	}
+</script>
+</head>
+<body>
+<div class="navbar navbar-default navbar-fixed-left">
+			<ul class="nav navbar-nav">
+				<li><b>Start Time</b></li>
+				<li><input id="datepickerFrom" type="text"></li>
+				<li><b>End Time</b></li>
+				<li><input id="datepickerTo" type="text"></li>
+				<li><p> 
+				
+				
+				
+				</p></li>
+				<li><input value="Apply!" type="button" onClick="dateFilter();">
+				</li>
+			</ul>
+		</div>
+		
+
+	<div class="container">
+	<div class="row">	
+		<div id="container"></div>
+		<input id="1" value="problem1" type="button" onClick="columnWiseFilter(this.id);">
+		<input id="2" value="problem2" type="button" onClick="columnWiseFilter(this.id);">
+		<input id="3" value="reason1" type="button" onClick="columnWiseFilter(this.id);">
+		<div id="containerpie"></div>
+	</div>
+	
+	</div>
+	
+
+	<script type="text/javascript"> 
+	
+		var from = '';
+		var to = '';
+		if (from == '' || to == '') {
+			var d = new Date(new Date());
+			var curr_date = d.getDate();
+			var curr_month = d.getMonth() + 1; //Months are zero based
+			var curr_year = d.getFullYear();
+			var curr_hour = d.getHours();
+			var curr_min = d.getMinutes();
+
+			if (to == '') {
+				//to = curr_year + "-" + curr_month + "-" + curr_date + " "
+				//		+ curr_hour + ":" + curr_min;
+				to = "2015-3-17 16:23";
+			}
+			d.setDate(1);
+			curr_date = d.getDate();
+
+			if (from == '') {
+				//from = curr_year + "-" + curr_month + "-" + curr_date
+				//		+ " 00:00";
+				from = "2015-1-1 00:00";
+			}
+		}
+
+		$("#datepickerFrom").datetimepicker({
+			format : 'Y-m-d H:i'
+		});
+		$("#datepickerTo").datetimepicker({
+			format : 'Y-m-d H:i'
+		});
+
+		$('#datepickerFrom').datetimepicker({
+			value : from,
+			step : 30
+		});
+		$('#datepickerTo').datetimepicker({
+			value : to,
+			step : 30
+		});
+
+		document.getElementById('datepickerFrom').value = from;
+		document.getElementById('datepickerTo').value = to;
+		var timeobject = {};
+		timeobject.to = to;
+		timeobject.from = from;
+		//timeobject.chartName = $("input[type='radio'].radioBtnClass:checked").val().toString();
+		sendRestfulCall(timeobject); // Calling plot functions with default time
+
+	</script>
+
+</body>
+</html>
